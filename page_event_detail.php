@@ -3,8 +3,6 @@ session_start();
 include "koneksi/koneksi.php";
 
 $event_id = $_GET["id"];
-
-
 ?>
 
 <!DOCTYPE html>
@@ -34,7 +32,6 @@ $event_id = $_GET["id"];
                         <ul class="nav-menu">
                             <li><a href="index.php">Home</a></li>
                             <li class="menu-active"><a href="page_kategori.php">Kategori Event</a></li>
-                            <li><a href="page_contact.php">Hubungi Kami</a></li>
                             <li><a href="page_login.php">Login</a></li>
                         </ul>
                     </nav>
@@ -52,14 +49,15 @@ $event_id = $_GET["id"];
                 <div class="col-md-12">
                     <div class="card">
                         <?php
-                        $queryevent = mysqli_query($konek, "SELECT*FROM tbl_event, tbl_period, tbl_ticket WHERE tbl_event. event_id='$event_id'");
+                        $queryevent = mysqli_query($konek, "SELECT tbl_event.*, tbl_period.*, tbl_ticket.tkt_category
+                                                            FROM tbl_event
+                                                            LEFT JOIN tbl_period ON tbl_event.event_id = tbl_period.event_id
+                                                            LEFT JOIN tbl_ticket ON tbl_period.period_id = tbl_ticket.period_id
+                                                            WHERE tbl_event.event_id = '$event_id'");
                         if ($queryevent == false) {
                             die("Terjadi Kesalahan : " . mysqli_error($konek));
                         }
                         while ($event = mysqli_fetch_array($queryevent)) {
-
-                        ?>
-                        <?php
                             $event_picture      =  $event['event_picture'];
                             $event_name         =  $event['event_name'];
                             $event_category     =  $event['event_category'];
@@ -69,10 +67,6 @@ $event_id = $_GET["id"];
                             $event_time_start   =   date('H:i', strtotime($event['event_time_start']));
                             $event_time_finish  =   date('H:i', strtotime($event['event_time_finish']));
                             $event_location     =  $event['event_location'];
-
-                            $period_id          =  $event['period_id'];
-                            $tkt_id             =  $event['tkt_id'];
-                            $tkt_category       =  $event['tkt_category'];
                         }
                         ?>
                         <section class="home-banner-area relative" id="home">
@@ -142,94 +136,90 @@ $event_id = $_GET["id"];
                             <div class="tab-panels">
                                 <section id="deskripsi" class="tab-panel">
                                     <div class="container">
-                                        <p class="card-text-detail"><?php echo $event_desc ?>
-                                        </p>
+                                        <p class="card-text-detail"><?php echo $event_desc ?></p>
                                     </div>
                                 </section>
-
                                 <section id="kategori" class="tab-panel">
-                                    <div class="container">
-                                        <div class="bp-card bg-ticket" data-clickthrough="link">
-                                            <div class="bp-card_label">
-                                                <div class="bd-border_solid"></div>
-                                                <div class="bd-border_dotted"></div>
+                                <div class="container">
+                                    <?php
+                                    $categories = array();
+                                    mysqli_data_seek($queryevent, 0); // Reset pointer to start of result set
+                                    while ($row = mysqli_fetch_assoc($queryevent)) {
+                                        $category = $row['tkt_category'];
+                                        if (!in_array($category, $categories)) {
+                                            $categories[] = $category;
+                                            ?>
+                                            <div class="bp-card bg-ticket" data-clickthrough="link">
+                                                <div class="bp-card_label">
+                                                    <div class="bd-border_solid"></div>
+                                                    <div class="bd-border_dotted"></div>
+                                                </div>
+                                                <div class="bp-card_content">
+                                                    <p class="secondary"><?php echo $category; ?></p>
+                                                    <h4>Ticket name</h4>
+                                                    <ul>
+                                                        <span>Including:</span>
+                                                        <li>Minimal 1</li>
+                                                        <li>Minimal 1</li>
+                                                        <li>Minimal 1</li>
+                                                    </ul>
+                                                    <a href="" class="price">€ 9,-</a>
+                                                </div>
                                             </div>
-                                            <div class="bp-card_content">
-                                                <p class="secondary">Medium ticket</p>
-                                                <h4>Ticket name</h4>
-
-
-                                                <ul>
-                                                    <span>Including:</span>
-                                                    <li>
-                                                        Minimal 1
-                                                    </li>
-                                                    <li>
-                                                        Minimal 1
-                                                    </li>
-                                                    <li>
-                                                        Minimal 1
-                                                    </li>
-                                                </ul>
-
-                                                <a href="" class="price">
-                                                    € 9,-
-                                                </a>
-
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
+                                            <?php
+                                        }
+                                    }
+                                    ?>
+                                </div>
+                            </section>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
+            <div class="col-md-4">
 
-                    <div class="card">
-                        <?php
-                        $queryperiod = mysqli_query($konek, "SELECT*FROM tbl_period WHERE event_id='$event_id' ORDER BY period_date ASC ");
-                        if ($queryperiod == false) {
-                            die("Terjadi Kesalahan : " . mysqli_error($konek));
-                        }
-                        while ($period = mysqli_fetch_array($queryperiod)) {
-
+                <div class="card">
+                    <?php
+                    mysqli_data_seek($queryevent, 0); // Reset pointer to start of result set
+                    while ($row = mysqli_fetch_assoc($queryevent)) {
+                        $period_id = $row['period_id'];
+                        $period_name = $row['period_name'];
+                        $period_date = date('d M Y', strtotime($row['period_date']));
                         ?>
-                            <div class="blockquotes">
-                                <blockquote class="generic-blockquote">
-                                    <h5 class="card-content-h4 bg-btn-secondary"><?php echo $period['period_name']; ?></h5>
-                                    <span class="card-content-span"><?php echo date('d M Y', strtotime($period['period_date'])); ?></span>
-                                </blockquote>
-                            </div>
-                        <?php } ?>
-                    </div>
+                        <div class="blockquotes">
+                            <blockquote class="generic-blockquote">
+                                <h5 class="card-content-h4 bg-btn-secondary"><?php echo $period_name; ?></h5>
+                                <span class="card-content-span"><?php echo $period_date; ?></span>
+                            </blockquote>
+                        </div>
+                        <?php
+                    }
+                    ?>
                 </div>
-
-
             </div>
 
 
-    </section>
+        </div>
 
 
-    <!-- ========================= FOOTER ========================= -->
-    <!-- Library Scripts -->
-    <?php
-    include "footer.php";
-    ?>
-
-    <!-- ========================= FOOTER END // ========================= -->
+</section>
 
 
-    <!-- Library Scripts -->
-    <?php
-    include "bundle_script_enduser.php";
-    ?>
+<!-- ========================= FOOTER ========================= -->
+<!-- Library Scripts -->
+<?php
+include "footer.php";
+?>
+
+<!-- ========================= FOOTER END // ========================= -->
+
+
+<!-- Library Scripts -->
+<?php
+include "bundle_script_enduser.php";
+?>
 
 
 
-    <!--End of Tawk.to Script-->
-</body>
-
-</html>
+<!--End of Tawk.to Script-->
